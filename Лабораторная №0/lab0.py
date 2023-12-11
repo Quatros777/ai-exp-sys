@@ -20,7 +20,7 @@ plt.ylabel('Количество продаж')
 plt.legend()
 plt.show()
 
-# Прогноз на 13-й месяц с использованием скользящего среднего
+
 forecast_data = {}
 for product, sales in sales_data.items():
     # Применяем метод скользящего среднего
@@ -28,7 +28,6 @@ for product, sales in sales_data.items():
  количество месяцев для анализа
     forecast_data[product] = forecast
 
-# Определим диапазоны для выделения цветом
 color_ranges = {
     'high': 150,
     'medium': 100,
@@ -37,7 +36,6 @@ color_ranges = {
 # Создадим список цветов для каждого продукта в зависимости от прогноза
 colors = ['green' if forecast > color_ranges['high'] else 'yellow' if forecast > color_ranges['medium'] else 'red' for forecast in forecast_data.values()]
 
-# Построим горизонтальный бар-график прогноза на 13-й месяц с цветовым выделением
 plt.barh(list(forecast_data.keys()), list(forecast_data.values()), color=colors)
 plt.title('Прогноз продаж на 13-й месяц')
 plt.xlabel('Прогноз продаж')
