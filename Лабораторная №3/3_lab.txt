@@ -1,0 +1,130 @@
+import warnings
+from sklearn.datasets import fetch_20newsgroups
+warnings.simplefilter(action='ignore', category=FutureWarning)
+
+categories = ['comp.windows.x', 'talk.politics.guns', 'talk.politics.misc']
+remove = ('headers', 'footers', 'quotes')
+
+twenty_train_full = fetch_20newsgroups(subset='train', categories=categories, shuffle=True, random_state=42, remove=remove)
+twenty_test_full = fetch_20newsgroups(subset='test', categories=categories, shuffle=True, random_state=42, remove=remove)
+
+from sklearn.tree import DecisionTreeClassifier
+from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.ensemble import RandomForestClassifier
+
+stop_words = [None, 'english']
+max_features_values = [100, 500, 1000, 5000, 10000]
+use_idf = [True, False]
+
+rf_first = range(1, 5, 1)
+rf_second = range(5, 100, 20)
+
+rf_tree_max_depth = [*rf_first, *rf_second]
+
+dt_parameters = {
+    'vect__max_features': max_features_values,
+    'vect__stop_words': stop_words,
+    'tfidf__use_idf': use_idf,
+    'clf__criterion': ('gini', 'entropy'),
+    'clf__max_depth': [*range(1, 6, 1), *range(25, 101, 20)],
+}
+
+parameters_svm_l1 = {
+    'vect__max_features': max_features_values,
+    'vect__stop_words': stop_words,
+    'tfidf__use_idf': use_idf
+}
+
+parameters_svm_l2 = {
+    'vect__max_features': max_features_values,
+    'vect__stop_words': stop_words,
+    'tfidf__use_idf': use_idf,
+    'clf__loss': ['hinge', 'squared_hinge']
+}
+
+lr_parameters = {
+    'vect__max_features': max_features_values,
+    'vect__stop_words': stop_words,
+    'tfidf__use_idf': use_idf,
+    'clf__solver': ['newton-cg', 'lbfgs', 'sag', 'liblinear'],
+    'clf__penalty': ['l2'],
+}
+
+from sklearn.model_selection import GridSearchCV
+from sklearn.pipeline import Pipeline
+from sklearn.feature_extraction.text import CountVectorizer, TfidfTransformer
+
+text_clf_dt = Pipeline([('vect', CountVectorizer()),
+                         ('tfidf', TfidfTransformer()),
+                         ('clf', DecisionTreeClassifier())])
+gscv_dt = GridSearchCV(text_clf_dt, param_grid=dt_parameters, n_jobs=-1)
+gscv_dt.fit(twenty_train_full.data, twenty_train_full.target)
+
+text_clf_dt_stem = Pipeline([('vect', CountVectorizer()),
+                              ('tfidf', TfidfTransformer()),
+                              ('clf', DecisionTreeClassifier())])
+gscv_dt_stem = GridSearchCV(text_clf_dt_stem, param_grid=dt_parameters, n_jobs=-1)
+gscv_dt_stem.fit(stem_train, twenty_train_full.target)
+
+text_clf_svm_l2 = Pipeline([('vect', CountVectorizer()),
+                         ('tfidf', TfidfTransformer()),
+                         ('clf', LinearSVC())])
+gscv_svm_l2 = GridSearchCV(text_clf_svm_l2, param_grid=parameters_svm_l2, n_jobs=-1)
+gscv_svm_l2.fit(train_bunch.data, train_bunch.target)
+
+text_clf_svm_l1 = Pipeline([('vect', CountVectorizer()),
+                            ('tfidf', TfidfTransformer()),
+                            ('clf', LinearSVC(penalty='l1', dual=False))])
+gscv_svm_l1 = GridSearchCV(text_clf_svm_l1, param_grid=parameters_svm_l1, n_jobs=-1)
+gscv_svm_l1.fit(train_bunch.data, train_bunch.target)
+
+text_clf_svm_l1 = Pipeline([('vect', CountVectorizer()),
+                            ('tfidf', TfidfTransformer()),
+                            ('clf', LinearSVC(penalty='l1', dual=False))])
+gscv_svm_l1 = GridSearchCV(text_clf_svm_l1, param_grid=parameters_svm_l1, n_jobs=-1)
+gscv_svm_l1.fit(train_bunch.data, train_bunch.target)
+
+text_clf_lr = Pipeline([('vect', CountVectorizer()),
+                         ('tfidf', TfidfTransformer()),
+                         ('clf', LogisticRegression())])
+gscv_lr = GridSearchCV(text_clf_lr, param_grid=lr_parameters, n_jobs=-1)
+gscv_lr.fit(twenty_train_full.data, twenty_train_full.target)
+
+text_clf_lr_stem = Pipeline([('vect', CountVectorizer()),
+                              ('tfidf', TfidfTransformer()),
+                              ('clf', LogisticRegression())])
+gscv_lr_stem = GridSearchCV(text_clf_lr_stem, param_grid=lr_parameters, n_jobs=-1)
+gscv_lr_stem.fit(stem_train, twenty_train_full.target)
+
+import pandas as pd
+
+# Создаем Excel-файл и записываем в него результаты для новых методов
+writer = pd.ExcelWriter('result_updated.xlsx', engine='openpyxl')
+
+# Дерево решений (DT) без стемминга
+df_dt = pd.DataFrame(classification_report(predicted_dt, twenty_test_full.target, output_dict=True))
+df_dt.to_excel(writer, sheet_name='DT без стемминга')
+
+# Дерево решений (DT) со стеммингом
+df_dt_stem = pd.DataFrame(classification_report(predicted_dt_stem, twenty_test_full.target, output_dict=True))
+df_dt_stem.to_excel(writer, sheet_name='DT со стеммингом')
+
+# K-ближайших соседей (SVM) без стемминга
+df_svm = pd.DataFrame(classification_report(predicted_svm, twenty_test_full.target, output_dict=True))
+df_svm.to_excel(writer, sheet_name='SVM без стемминга')
+
+# K-ближайших соседей (SVM) со стеммингом
+df_svm_stem = pd.DataFrame(classification_report(predicted_svm_stem, twenty_test_full.target, output_dict=True))
+df_svm_stem.to_excel(writer, sheet_name='SVM со стеммингом')
+
+# Логистическая регрессия (LR) без стемминга
+df_lr = pd.DataFrame(classification_report(predicted_lr, twenty_test_full.target, output_dict=True))
+df_lr.to_excel(writer, sheet_name='LR без стемминга')
+
+# Логистическая регрессия (LR) со стеммингом
+df_lr_stem = pd.DataFrame(classification_report(predicted_lr_stem, twenty_test_full.target, output_dict=True))
+df_lr_stem.to_excel(writer, sheet_name='LR со стеммингом')
+
+# Закрываем запись в Excel-файл
+writer.close()
